@@ -25,8 +25,32 @@ CREATE TABLE `ssb`.`Meetups`.`hfbloom` (
   'properties.group.id' = 'llmBloomProps'
 )
 
+````
+
+
+#### Slack Output
 
 ````
+==== NiFi to Hugging Face BLOOM LLM
+AzureML Model Deployment: bloom-deployment
+On Date: Thu, 17 Aug 2023 02:05:56 GMT
+File Name: 7b8afb65-d5eb-49ee-9a89-d2b870310243
+Request Duration: 1339
+Request URL: https://api-inference.huggingface.co/models/bigscience/bloom
+Compute Characters: 63
+Compute Time: 1014
+Compute Type: gpu+optimized
+Inference Time: 968
+Queue Time: 45
+Request ID: iPX8lqeK9XwqSZA9e-wCH
+SHA:  053d9cd9fbe814e091294f67fcfedb3397b954bb
+Time Per Token: 48
+Total Time: 1014
+Validation Time: 0
+R: Apache NiFi is a great tool for loading data into Apache Kafka. It is a very simple and easy to use tool. It is a very simple and easy to use
+=====
+````
+
 
 #### Link to Model
 
