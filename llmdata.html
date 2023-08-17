@@ -1,0 +1,441 @@
+<html>
+<head>
+<title>NiFi LLM Demo</title>
+<link rel="stylesheet" type="text/css"  href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+</head>
+<body bgcolor="white" text="black">
+<script>
+
+function isEmpty(val){
+    return (val === undefined || val == null || val.length <= 0) ? true : false;
+}
+
+// Usage
+window.onload = function() {
+      
+navigator.getBattery().then(function(battery) {
+  // console.log(battery.level);
+  battery.addEventListener('levelchange', function() {
+    // console.log(this.level);
+  });
+});
+
+navigator.connection.addEventListener('change', logNetworkInfo);
+};
+
+function setCookie(name,value,days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}
+function eraseCookie(name) {   
+    document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+////////////// print these
+  var city =  "";
+  var region =  "";
+  var postal =  "";
+  var lat2 =  "";
+  var long2 =  "";
+  var timezone =  "";
+  var asn =  "";
+  var latitude = "";
+  var longitude = "";
+  var ips = "";
+  var ip2 = "";
+  var batteryInfo = "";
+  var screenInfo = screen.width +","+ screen.height + "," +
+                   screen.availWidth +","+ screen.availHeight + "," +
+                     screen.colorDepth + "," + screen.pixelDepth;
+  var pluginsInfo = "";
+  var coresInfo = "";
+  var netInfo = "";
+  var downInfo = "";
+  var rttInfo = "";
+  var downMaxInfo = "";
+  var effectiveInfo = "";
+  var saveDataInfo = "";
+  var inputs = "";
+
+  inputs = getCookie('query');
+
+</script>
+<p>
+<form id="form-id">
+    <input type="hidden" name="pluginsInfo" id="pluginsInfo" value="NA"/>
+    <input type="hidden" name="netInfo" id="netInfo" value="NA"/>
+    <input type="hidden" name="saveDataInfo" id="saveDataInfo" value="NA"/>
+    <input type="hidden" name="downInfo" id="downInfo" value="NA"/>
+    <input type="hidden" name="rttInfo" id="rttInfo" value="NA"/>
+    <input type="hidden" name="downMaxInfo" id="downMaxInfo" value="NA"/>
+    <input type="hidden" name="effectiveInfo" id="effectiveInfo" value="NA"/>
+    <input type="hidden" name="screen" id="screenInfo" value="NA"/>
+    <input type="hidden" name="cores" id="coresInfo" value="NA"/>
+    <input type="hidden" name="battery" id="batteryInfo" value="NA"/>
+    <input type="hidden" name="ip" id="ip2" value="NA"/>
+    <input type="hidden" name="lng" id="lng" value="NA"/>
+    <input type="hidden" name="lat" id="lat" value="NA"/>
+
+    <!-- A different field, just for the sake of the example -->
+    See: <a href="https://huggingface.co/bigscience/bloom">Big Science Bloom on Hugging Face</a><br>
+
+    <p><label>Start a text to have it continued: </label><textarea rows="5" cols="80" name="other-field" type="text" id="other-field-id" width="300"></textarea>
+    </p>
+    <!-- And finally a submit button -->
+    <p><button onclick="chat()">Go</button></p>
+</form>
+<div id="out"></div>
+
+<div id="demo"></div>
+
+<div id="results"> </div>
+
+<pre id="log"></pre>
+ 
+<iframe id="iframe" sandbox="allow-same-origin" style="display: none"></iframe>
+<script>
+
+if ( isEmpty(inputs)) { 
+    inputs = " ";
+}
+else {
+    document.getElementById('other-field-id').value = inputs;
+}
+
+function logNetworkInfo() {
+  // Network type that browser uses
+  netInfo = navigator.connection.type;
+
+  document.getElementById('netInfo').value = netInfo;
+
+  // Effective bandwidth estimate
+  downInfo = navigator.connection.downlink + ' Mb/s';
+
+  document.getElementById('downInfo').value = downInfo;
+
+  // Effective round-trip time estimate
+  rttInfo = navigator.connection.rtt + ' ms';
+
+  document.getElementById('rttInfo').value = rttInfo;
+
+  // Upper bound on the downlink speed of the first network hop
+  downMaxInfo = navigator.connection.downlinkMax + ' Mb/s';
+
+  document.getElementById('downMaxInfo').value = downMaxInfo;
+
+  // Effective connection type determined using a combination of recently
+  // observed rtt and downlink values: ' +
+  effectiveInfo =  navigator.connection.effectiveType;
+  
+  document.getElementById('effectiveInfo').value = effectiveInfo;
+
+  // True if the user has requested a reduced data usage mode from the user
+  // agent.
+  saveDataInfo = navigator.connection.saveData;
+
+  document.getElementById('saveDataInfo').value = saveDataInfo;
+}
+
+logNetworkInfo();
+  
+////// Set Plugins
+ for (var i = 0; i < 12; i++) {
+ 		if ( typeof window.navigator.plugins[i] !== 'undefined' ) { 
+        	pluginsInfo += window.navigator.plugins[i].name + ', ';                 
+        }
+ }
+
+ document.getElementById('pluginsInfo').value = pluginsInfo;
+ 
+////// Set Cores
+if ( window.navigator.hardwareConcurrency > 0  ) {
+    coresInfo = window.navigator.hardwareConcurrency + " cores";
+    document.getElementById('coresInfo').value = coresInfo;
+}
+
+/// send the information to the server
+function loadDoc() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("demo").innerHTML = '';
+    }
+  };
+  document.getElementById('screenInfo').value = screenInfo;
+
+  xhttp.open("POST", "http://localhost:9176/chat", true);
+  xhttp.setRequestHeader("Content-type", "application/json");
+  xhttp.responseType = 'json';
+
+  if ( isEmpty(lat2) ) {
+    lat2 = document.getElementById('lat').value;
+  }
+  if ( isEmpty(long2) ) {
+    long2 = document.getElementById('lng').value;
+  }
+
+  if ( isEmpty(lat2) ) {
+    lat2 = latitude;
+  }
+  if ( isEmpty(long2) ) {
+    long2 = longitude;
+  }
+
+  xhttp.send('{"plugins":"' + pluginsInfo +
+               '", "screen":"' + screenInfo + 
+               '", "cores":"' + coresInfo + 
+               '", "battery":"' + batteryInfo + 
+               '", "downInfo":"' + downInfo +
+               '", "rttInfo":"' + rttInfo +
+               '", "effectiveInfo":"' + effectiveInfo +
+               '", "inputs":"' + inputs +
+               '", "lat":"' + lat2 + 
+               '", "lng":"' + long2 + '"}')
+inputsave = inputs + "";
+
+setCookie('query',inputsave,14);
+
+var htmlString = "";
+
+xhttp.onload = function() {
+  if (this.status == 200) {
+     document.getElementById("other-field-id").value = inputs;
+     document.getElementById("out").innerHTML = inputsave;
+  }
+};
+
+}
+
+function chat() {
+  inputs = document.getElementById("other-field-id").value;
+  loadDoc();
+}
+
+////////////
+function geoFindMe() {
+  var output = document.getElementById("out");
+
+  if (!navigator.geolocation){
+    output.innerHTML = "<p>Geolocation is not supported by your browser</p>";
+    return;
+  }
+
+  function success(position) {
+
+    if(! isEmpty(position.coords.latitude) ) { 
+     latitude  = position.coords.latitude;
+     document.getElementById('lat').value = latitude;
+     lat2 = latitude;
+    }
+    if ( ! isEmpty(position.coords.longitude) ) { 
+     longitude = position.coords.longitude;
+     document.getElementById('lng').value = longitude;
+     long2 = longitude;
+    }
+
+    output.innerHTML = '<p>Latitude is ' + latitude + ' <br>Longitude is ' + longitude + '</p>';
+  }
+
+  function error() {
+    output.innerHTML = "Unable to retrieve your location.   Please enter your lat/long or street address and city";
+  }
+
+  output.innerHTML = "<p>Locating...</p>";
+
+  navigator.geolocation.getCurrentPosition(success, error);
+
+  //loadDoc();
+}
+
+//get the IP addresses associated with an account
+function getIPs(callback)
+{
+    var ip_dups = {};
+}
+
+window.addEventListener("load", function (ev) {
+    "use strict";
+    var log = document.getElementById("log");
+    // https://dvcs.w3.org/hg/dap/raw-file/tip/sensor-api/Overview.html
+    window.addEventListener("devicetemperature", function (ev) {
+        log.textContent += "devicetemperature " + ev.value + "\n";
+    }, false);
+    window.addEventListener("devicepressure", function (ev) {
+        log.textContent += "devicepressure " + ev.value + "\n";
+    }, false);
+    window.addEventListener("devicelight", function (ev) {
+        log.textContent += "devicelight " + ev.value + "\n";
+        // toy tric
+        log.style.color = "rgb(" + (255 - 2*ev.value) + ",0,0)";
+        log.style.backgroundColor = "rgb(0,0," + (2*ev.value) + ")";
+    }, false);
+    window.addEventListener("deviceproximity", function (ev) {
+        log.textContent += "deviceproximity " + ev.value + "\n";
+        // toy tric
+        if (ev.value < 3) navigator.vibrate([300, 100, 100]);
+    }, false);
+    window.addEventListener("devicenoise", function (ev) {
+        log.textContent += "devicenoise " + ev.value + "\n";
+    }, false);
+    window.addEventListener("devicehumidity", function (ev) {
+        log.textContent += "devicehumidity " + ev.value + "\n";
+    }, false);
+
+    //https://wiki.mozilla.org/Magnetic_Field_Events
+    window.addEventListener("devicemagneticfield", function (ev) {
+        log.textContent += "devicemagneticfield " + [ev.x, ev.y, ev.x]+ "\n";
+    }, false);
+
+    // https://dvcs.w3.org/hg/dap/raw-file/default/pressure/Overview.html
+    window.addEventListener("atmpressure", function (ev) {
+        log.textContent += "atmpressure " + ev.value + "\n";
+    }, false);
+    
+    // https://dvcs.w3.org/hg/dap/raw-file/tip/humidity/Overview.html
+    window.addEventListener("humidity", function (ev) {
+        log.textContent += "humidity " + ev.value + "\n";
+    }, false);
+    
+    // https://dvcs.w3.org/hg/dap/raw-file/tip/temperature/Overview.html
+    window.addEventListener("temperature", function (ev) {
+        log.textContent += "temperature " + [ev.f, ev.c, ev.k, ev.value] + "\n";
+    }, false);
+    
+    // https://dvcs.w3.org/hg/dap/raw-file/tip/battery/Overview.html
+    try {
+        if (typeof navigator.getBattery === "function") {
+            navigator.getBattery().then(function (battery) {
+                log.textContent += "battery.level " + battery.level + "\n";
+                log.textContent += "battery.charging " + battery.charging + "\n";
+                
+                batteryInfo = "battery.level=" + battery.level + "," + 
+                               "battery.charging=" + battery.charging;
+                
+                log.textContent += "battery.chargeTime " + battery.chargeTime + "\n";
+                log.textContent += "battery.dischargeTime " + battery.dischargeTime + "\n";
+                battery.addEventListener("levelcharge", function (ev) {
+                    log.textContent += "change battery.level " + battery.level + "\n";
+                    batteryInfo = "battery.level=" + battery.level + "," + 
+                               "battery.charging=" + battery.charging;
+                }, false);
+            }).catch(function (err) {
+                log.textContent += err.toString() + "\n";
+            });
+        } else {
+            log.textContent += "";
+        }
+    } catch (ex) {
+        log.textContent += ex.toString() + "\n";
+    }
+}, false);
+
+geoFindMe();
+</script>
+<br><br>
+<p>
+<br>
+
+<table id="pmtable" class="display" style="width:100%; text-align:left;">
+        <thead>
+            <tr>
+                       <th valign="left"><b>Start</b></th>
+                       <th valign="left"><b>Generated</b></th>
+                       <th valign="left"><b>Compute Time</b></th>
+                       <th valign="left"><b>Compute Chars</b></th>
+                       <th valign="left"><b>Time Per Token</b></th>
+                       <th valign="left"><b>Compute Type</b></th>
+                       <th valign="left"><b>Time</b></th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                       <th valign="left"><b>Start</b></th>
+                       <th valign="left"><b>Generated</b></th>
+                       <th valign="left"><b>Compute Time</b></th>
+                       <th valign="left"><b>Compute Chars</b></th>
+                       <th valign="left"><b>Time Per Token</b></th>
+                       <th valign="left"><b>Compute Type</b></th>
+                       <th valign="left"><b>Time</b></th>
+            </tr>
+        </tfoot>
+    </table>
+<script>
+function isEmpty(val){
+    return (val === undefined || val == null || val.length <= 0) ? true : false;
+}
+function IsJsonString(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+$(document).ready(function() {
+    var t = $('#pmtable').DataTable();
+$.getJSON('http://localhost:18131/api/v1/query/5243/llm?key=6a70f2e8-2226-4a32-9473-e7910d5df34b', 
+    function(data) {
+      $.each( data, function( key, val ) {
+        console.log( data[key].uuid );
+
+        var generated_text= "";
+        if ( !isEmpty(data[key].generated_text) ) {
+            generated_text = data[key].generated_text;
+        }
+        var eventTimeStamp= "";
+        if ( !isEmpty(data[key].eventTimeStamp) ) {
+            eventTimeStamp = data[key].eventTimeStamp;
+        }
+        var inputs= "";
+        if ( !isEmpty(data[key].inputs) ) {
+            inputs = data[key].inputs;
+        }
+        var x_compute_time= "";
+        if ( !isEmpty(data[key].x_compute_time) ) {
+            x_compute_time = data[key].x_compute_time;
+        }
+        var x_compute_characters= "";
+        if ( !isEmpty(data[key].x_compute_characters) ) {
+            x_compute_characters = data[key].x_compute_characters;
+        }
+        var x_time_per_token= "";
+        if ( !isEmpty(data[key].x_time_per_token) ) {
+            x_time_per_token = data[key].x_time_per_token;
+        }
+        var x_compute_type= "";
+        if ( !isEmpty(data[key].x_compute_type) ) {
+            x_compute_type = data[key].x_compute_type;
+        }
+
+        t.row.add( [ inputs, generated_text, x_compute_time, x_compute_characters, 
+                     x_time_per_token, x_compute_type,eventTimeStamp ]).draw(true);
+      });
+    });
+}); 
+</script>
+<p>
+<br>
+</p>
+<p><br></p><br>
+&copy; 2023 Tim Spann @PaasDev - datainmotion.dev
+<br>   
+</p>
+</body>
+</html>
