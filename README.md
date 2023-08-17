@@ -10,20 +10,27 @@ https://huggingface.co/bigscience/bloom into NiFi
 CREATE TABLE `ssb`.`Meetups`.`hfbloom` (
   `generated_text` VARCHAR(2147483647),
   `ts` VARCHAR(2147483647),
+  `x_compute_type` VARCHAR(2147483647),
+  `inputs` VARCHAR(2147483647),
+  `x_compute_time` VARCHAR(2147483647),
+  `x_inference_time` VARCHAR(2147483647),
   `uuid` VARCHAR(2147483647),
+  `x_time_per_token` VARCHAR(2147483647),
+  `x_compute_characters` VARCHAR(2147483647),
   `eventTimeStamp` TIMESTAMP(3) WITH LOCAL TIME ZONE METADATA FROM 'timestamp',
   WATERMARK FOR `eventTimeStamp` AS `eventTimeStamp` - INTERVAL '3' SECOND
 ) WITH (
+  'scan.startup.mode' = 'group-offsets',
+  'properties.request.timeout.ms' = '120000',
   'properties.auto.offset.reset' = 'earliest',
   'format' = 'json',
-  'scan.startup.mode' = 'group-offsets',
   'properties.bootstrap.servers' = 'kafka:9092',
   'connector' = 'kafka',
-  'properties.request.timeout.ms' = '120000',
   'properties.transaction.timeout.ms' = '900000',
   'topic' = 'hfbloom',
   'properties.group.id' = 'llmBloomProps'
 )
+
 
 ````
 
